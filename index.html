@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grid Path Game</title>
+    <style>
+        body {
+            background-color: #2E2E2E;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            position: relative;
+        }
+        .button {
+            position: absolute;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            border: none;
+        }
+        .run-button {
+            top: 20px;
+            right: 20px;
+            background-color: red;
+            color: white;
+        }
+        .run-button:hover {
+            background-color: darkred;
+        }
+        .shortest-button {
+            bottom: 20px;
+            left: 20px;
+            background-color: lightblue;
+            display: none;
+        }
+        .shortest-button:hover {
+            background-color: deepskyblue;
+        }
+        .new-game-button {
+            top: 20px;
+            left: 20px;
+            background-color: green;
+            color: white;
+        }
+        .new-game-button:hover {
+            background-color: darkgreen;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(6, 60px);
+            grid-template-rows: repeat(6, 60px);
+            gap: 5px;
+            background-color: #2E2E2E;
+            padding: 10px;
+        }
+        .cell {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: green;
+            border: 2px solid #2E2E2E;
+            position: relative;
+        }
+        .obstacle {
+            background: url('images/obstacle.png') no-repeat center center;
+            background-size: cover;
+        }
+        .person {
+            background: url('images/person.png') no-repeat center center;
+            background-size: cover;
+            /* background-color: blue; */
+        }
+        .home {
+            background: url('images/house.png') no-repeat center center;
+            background-size: cover;
+        }
+        .shortest-path {
+            animation: blink 0.8s infinite alternate;
+        }
+        @keyframes blink {
+            0% { background-color: orange; }
+            100% { background-color: thistle; }
+        }
+    </style>
+</head>
+<body>
+    <button class="button run-button" onclick="highlightPaths()">Run</button>
+    <button class="button shortest-button" id="shortest-btn" onclick="highlightShortestPath()">Give me shortest path</button>
+    <button class="button new-game-button" onclick="generateNewGrid()">New Game</button>
+    <div class="grid-container" id="grid"></div>
+    <script>
+        let gridData;
+        const pathColors = ["yellow", "purple", "blue", "orange", "pink", "cyan"];
+
+        function generateRandomGrid() {
+            let newGrid = Array.from({ length: 6 }, () => Array(6).fill(0));
+            for (let i = 0; i < 8; i++) {
+                let r, c;
+                do {
+                    r = Math.floor(Math.random() * 6);
+                    c = Math.floor(Math.random() * 6);
+                } while ((r === 0 && c === 0) || (r === 5 && c === 5) || newGrid[r][c] === 1);
+                newGrid[r][c] = 1;
+            }
+            return newGrid;
+        }
+
+        function createGrid() {
+            const gridContainer = document.getElementById("grid");
+            gridContainer.innerHTML = "";
+            for (let i = 0; i < 6; i++) {
+                for (let j = 0; j < 6; j++) {
+                    const cell = document.createElement("div");
+                    cell.classList.add("cell");
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    if (gridData[i][j] === 1) {
+                        cell.classList.add("obstacle");
+                    }
+                    if (i === 0 && j === 0) {
+                        cell.classList.add("home");
+                    }
+                    if (i === 5 && j === 5) {
+                        cell.classList.add("person");
+                    }
+                    gridContainer.appendChild(cell);
+                }
+            }
+        }
+
+        function findPaths(i, j, path) {
+            if (i < 0 || j < 0 || gridData[i][j] === 1) return [];
+            if (i === 0 && j === 0) return [path];
+            let upPaths = findPaths(i - 1, j, [...path, [i - 1, j]]);
+            let leftPaths = findPaths(i, j - 1, [...path, [i, j - 1]]);
+            return [...upPaths, ...leftPaths];
+        }
+
+        function highlightPaths() {
+            let allPaths = findPaths(5, 5, [[5, 5]]);
+            allPaths.forEach((path, index) => {
+                const color = pathColors[index % pathColors.length];
+                path.forEach(([r, c]) => {
+                    document.querySelector(`[data-row='${r}'][data-col='${c}']`).style.backgroundColor = color;
+                });
+            });
+            document.getElementById("shortest-btn").style.display = "block";
+        }
+
+        function highlightShortestPath() {
+            let allPaths = findPaths(5, 5, [[5, 5]]);
+            if (allPaths.length === 0) return;
+            let shortestPath = allPaths.reduce((min, curr) => curr.length < min.length ? curr : min, allPaths[0]);
+            shortestPath.forEach(([r, c]) => {
+                document.querySelector(`[data-row='${r}'][data-col='${c}']`).classList.add("shortest-path");
+            });
+        }
+
+        function generateNewGrid() {
+            gridData = generateRandomGrid();
+            createGrid();
+            document.getElementById("shortest-btn").style.display = "none";
+        }
+
+        gridData = generateRandomGrid();
+        createGrid();
+    </script>
+</body>
+</html>
